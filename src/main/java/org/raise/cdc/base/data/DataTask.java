@@ -1,4 +1,4 @@
-package org.raise.cdc.base;
+package org.raise.cdc.base.data;
 
 /**
  * @Description: 数据任务
