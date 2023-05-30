@@ -7,4 +7,17 @@ package org.raise.cdc.base.data;
  * @Version: V1.0
  */
 public interface DataProcess {
+    /**
+     * 对外输出数据
+     * @return
+     */
+    int sink();
+
+    /**
+     * 处理数据，然后调用sink()推送
+     *
+     * @return
+     */
+    int process();
+
 }

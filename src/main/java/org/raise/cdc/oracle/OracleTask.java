@@ -28,4 +28,12 @@ public class OracleTask implements DataTask {
     private boolean runningFlag = true;
 
     // KafkaProducer<Object, Object> producer =
+
+    /**
+     * 初始化资源
+     */
+    @Override
+    public void init() {
+        DataTask.super.init();
+    }
 }

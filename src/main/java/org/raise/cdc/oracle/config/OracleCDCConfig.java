@@ -2,6 +2,7 @@ package org.raise.cdc.oracle.config;
 
 import lombok.Builder;
 import lombok.Data;
+import org.raise.cdc.base.data.BaseStartConfig;
 
 import java.util.List;
 
@@ -13,7 +14,7 @@ import java.util.List;
  */
 @Data
 @Builder
-public class OracleCDCConfig {
+public class OracleCDCConfig extends BaseStartConfig {
     // 默认是增量抽取：除此以外的模式为：all， time, scn
     private String readPosition = "all";
 
