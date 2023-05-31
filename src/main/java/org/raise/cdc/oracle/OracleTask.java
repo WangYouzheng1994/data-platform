@@ -1,5 +1,6 @@
 package org.raise.cdc.oracle;
 
+import com.google.common.collect.Lists;
 import org.raise.cdc.base.data.DataTask;
 import org.raise.cdc.base.transaction.TransactionManager;
 import org.raise.cdc.base.util.PropertiesUtil;
@@ -49,6 +50,19 @@ public class OracleTask implements DataTask {
         String KafkaTopicName = getPropsStr("kafka.topic");
         String wechatKafkaTopicName = getPropsStr("wechat.kafka.topic");
         String listentKafkaTopicName = getPropsStr("listen.kafka.topic");
+        String jdbcUrl = getPropsStr("cdc.oracle.jdbcurl");
+
+        List<String> sourceTableList = null;
+        try {
+            sourceTableList = Lists.newArrayList();
+            //sourceTableList = new ArrayList<>();
+            //sourceTableList.addAll(Arrays.asList(tableArray));
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        this.oracleCDCConfig = OracleCDCConfig.builder().jdbcUrl(jdbcUrl).tables(sourceTableList).username(user).password(pwd).build();
+
+
         /*String host = PropertiesUtil.getPropsStr()("cdc.oracle.hostname");
         String port = props.getStr("cdc.oracle.port");
         String tableArray = props.getStr("cdc.oracle.table.list");
@@ -83,6 +97,10 @@ public class OracleTask implements DataTask {
      */
     @Override
     public void init() {
+        // 初始化配置
+        readConfig();
+
+
 
     }
 }

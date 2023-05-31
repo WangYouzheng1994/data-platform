@@ -1,4 +1,4 @@
-package org.raise.cdc.base.data;
+package org.raise.cdc.base.config;
 
 /**
  * @Description: 启动参数配置
