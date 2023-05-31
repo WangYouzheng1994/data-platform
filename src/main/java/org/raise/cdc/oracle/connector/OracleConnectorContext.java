@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.raise.cdc.base.config.ConnectorContext;
 import org.raise.cdc.oracle.bean.LogFile;
+import org.raise.cdc.oracle.config.OracleConnectorConfig;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
@@ -20,7 +21,7 @@ import java.util.List;
  */
 @Slf4j
 @Data
-public class OracleConnectorContext implements ConnectorContext {
+public class OracleConnectorContext<T extends OracleConnectorConfig> implements ConnectorContext {
     // -------- JDBC Start
     private Connection connection;
 
@@ -39,6 +40,7 @@ public class OracleConnectorContext implements ConnectorContext {
      */
     private ResultSet logMinerData;
 
+    T connectorConfig;
 
     /**
      * 当前线程加载到的日志文件

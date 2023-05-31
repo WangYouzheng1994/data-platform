@@ -2,6 +2,7 @@ package org.raise.cdc.oracle.config;
 
 import lombok.Builder;
 import lombok.Data;
+import org.raise.cdc.base.config.DataReadType;
 
 /**
  * @Description:
@@ -12,5 +13,5 @@ import lombok.Data;
 @Data
 @Builder
 public class OracleConnectorConfig extends OracleTaskConfig {
-
+    private DataReadType dataReadType;
 }

@@ -14,4 +14,8 @@ public class SqlUtil {
                     + "  NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS'"
                     + "  NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF6'"
                     + "  NLS_TIMESTAMP_TZ_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF6'";
+
+    public static final String SQL_GET_LOG_FILE_START_POSITION = "";
+
+    public static final String SQL_GET_CURRENT_SCN = "select min(CURRENT_SCN) CURRENT_SCN from gv$database";
 }

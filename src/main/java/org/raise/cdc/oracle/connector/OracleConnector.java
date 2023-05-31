@@ -1,10 +1,15 @@
 package org.raise.cdc.oracle.connector;
 
+import com.alibaba.druid.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.raise.cdc.base.config.DataReadType;
+import org.raise.cdc.base.util.JDBCConnector;
 import org.raise.cdc.oracle.config.OracleConnectorConfig;
 import org.raise.cdc.oracle.config.OracleTaskConfig;
+import org.raise.cdc.oracle.constants.LogminerKeyConstants;
 import org.raise.cdc.oracle.mapper.SqlUtil;
 
+import java.math.BigInteger;
 import java.sql.*;
 
 /**
@@ -14,7 +19,7 @@ import java.sql.*;
  * @Version: V1.0
  */
 @Slf4j
-public class OracleConnector {
+public class OracleConnector extends JDBCConnector {
     private OracleConnectorContext connContext;
 
     private Connection connection;
@@ -23,42 +28,16 @@ public class OracleConnector {
      * 初始化线程
      */
     void init(OracleConnectorConfig config) {
+        // 初始化连接
         getConnection(config);
     }
 
-    /** 关闭数据库连接资源 */
-    public void closeResources(ResultSet rs, Statement stmt, Connection conn) {
-        if (null != rs) {
-            try {
-                rs.close();
-            } catch (SQLException e) {
-                log.warn("Close resultSet error: {}", e.getMessage());
-            }
-        }
-        if (null != stmt) {
-            closeStmt(stmt);
-        }
-
-        if (null != conn) {
-            try {
-                conn.close();
-            } catch (SQLException e) {
-                log.warn("Close connection error:{}", e.getMessage());
-            }
-        }
-    }
-
-    /** 关闭Statement */
-    private void closeStmt(Statement statement) {
-        try {
-            if (statement != null && !statement.isClosed()) {
-                statement.close();
-            }
-        } catch (SQLException e) {
-            log.warn("Close statement error", e);
-        }
-    }
-
+    /**
+     * 加载驱动，创建连接
+     *
+     * @param config
+     * @return
+     */
     public boolean getConnection(OracleTaskConfig config) {
         int interval = 1;
         log.debug("connection driver class: {}", config.getDriverClass());
@@ -107,38 +86,86 @@ public class OracleConnector {
             result = true;
         }
         return result;
-    }/*
+    }
 
-    public BigInteger getStartSCN(OracleCDCConnection oracleCDCConnecUtil, BigInteger startScn) {
-        Connection connection = oracleCDCConnecUtil.getConnection();
-
+    public BigInteger getStartSCN(BigInteger startScn) {
         // 如果从保存点模式开始 并且不是0 证明保存点是ok的
         if (startScn != null && startScn.compareTo(BigInteger.ZERO) != 0) {
             return startScn;
         }
+        OracleConnectorConfig connectorConfig = connContext.getConnectorConfig();
+        DataReadType dataReadType = connectorConfig.getDataReadType();
 
         // 恢复位置为0，则根据配置项进行处理
-        if (SCNReadType.ALL.name().equalsIgnoreCase(oracleCDCConfig.getReadPosition())) {
+        if (DataReadType.ALL.equals(dataReadType)) {
             // 获取最开始的scn
-            startScn = oracleCDCConnecUtil.getMinScn(connection);
-        } else if (SCNReadType.CURRENT.name().equalsIgnoreCase(oracleCDCConfig.getReadPosition())) {
-            startScn = oracleCDCConnecUtil.getCurrentScn(connection);
-        } else if (SCNReadType.TIME.name().equalsIgnoreCase(oracleCDCConfig.getReadPosition())) {
+            startScn = getMinScn(connection);
+        } else if (DataReadType.CURRENT.equals(dataReadType)) {
+            startScn = getCurrentScn(connection);
+        } else if (DataReadType.TIME.name().equals(dataReadType)) {
             // 根据指定的时间获取对应时间段的日志文件的起始位置
-            if (oracleCDCConfig.getStartTime() == 0) {
-                throw new IllegalArgumentException("[startTime] must not be null or empty when readMode is [time]");
-            }
-            startScn = oracleCDCConnecUtil.getLogFileStartPositionByTime(connection, oracleCDCConfig.getStartTime());
-        } else if (SCNReadType.SCN.name().equalsIgnoreCase(oracleCDCConfig.getReadPosition())) {
+
+        }/* else if (DataReadType.SCN.name().equalsIgnoreCase(oracleCDCConfig.getReadPosition())) {
             // 根据指定的scn获取对应日志文件的起始位置
-            if (StringUtils.isEmpty(oracleCDCConfig.getStartSCN())) {
-                throw new IllegalArgumentException("[startSCN] must not be null or empty when readMode is [scn]");
-            }
-            startScn = new BigInteger(oracleCDCConfig.getStartSCN());
-        } else {
-            throw new IllegalArgumentException(
-                    "unsupported readMode : " + oracleCDCConfig.getReadPosition());
+
+        } */else {
+
         }
         return startScn;
-    }*/
+    }
+
+    /**
+     * 获取最小SCN
+     *
+     * @param connection
+     * @return
+     */
+    public BigInteger getMinScn(Connection connection) {
+        BigInteger minScn = null;
+        PreparedStatement minScnStmt = null;
+        ResultSet minScnResultSet = null;
+
+        try {
+            minScnStmt = connection.prepareStatement(SqlUtil.SQL_GET_LOG_FILE_START_POSITION);
+
+            minScnResultSet = minScnStmt.executeQuery();
+            while (minScnResultSet.next()) {
+                minScn = new BigInteger(minScnResultSet.getString(LogminerKeyConstants.KEY_FIRST_CHANGE));
+            }
+
+            return minScn;
+        } catch (SQLException e) {
+            log.error(" obtaining the starting position of the earliest archive log error", e);
+            throw new RuntimeException(e);
+        } finally {
+            closeResources(minScnResultSet, minScnStmt, null);
+        }
+    }
+
+    /**
+     * 获取当前SCN
+     *
+     * @param connection
+     * @return
+     */
+    public BigInteger getCurrentScn(Connection connection) {
+        BigInteger currentScn = null;
+        PreparedStatement currentScnStmt = null;
+        ResultSet currentScnResultSet = null;
+
+        try {
+            currentScnStmt = connection.prepareStatement(SqlUtil.SQL_GET_CURRENT_SCN);
+
+            currentScnResultSet = currentScnStmt.executeQuery();
+            while (currentScnResultSet.next()) {
+                currentScn = new BigInteger(currentScnResultSet.getString(LogminerKeyConstants.KEY_CURRENT_SCN));
+            }
+            return currentScn;
+        } catch (SQLException e) {
+            log.error("获取当前的SCN出错:", e);
+            throw new RuntimeException(e);
+        } finally {
+            closeResources(currentScnResultSet, currentScnStmt, null);
+        }
+    }
 }
