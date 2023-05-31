@@ -15,7 +15,7 @@ import java.util.List;
  */
 @Data
 @Builder
-public class OracleCDCConfig extends BaseStartConfig {
+public class OracleTaskConfig extends BaseStartConfig {
     // 默认是增量抽取：除此以外的模式为：all， time, scn
     private DataReadType readPosition = DataReadType.ALL;
 

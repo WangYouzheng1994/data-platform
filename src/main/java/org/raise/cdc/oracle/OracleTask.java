@@ -1,34 +1,39 @@
 package org.raise.cdc.oracle;
 
 import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
+import org.raise.cdc.base.config.BaseContextConfig;
 import org.raise.cdc.base.data.DataTask;
 import org.raise.cdc.base.transaction.TransactionManager;
-import org.raise.cdc.base.util.PropertiesUtil;
-import org.raise.cdc.oracle.config.OracleCDCConfig;
+import org.raise.cdc.oracle.config.OracleTaskConfig;
 
 import java.util.List;
-
-import org.raise.cdc.base.util.PropertiesUtil;
 
 import static org.raise.cdc.base.util.PropertiesUtil.getPropsStr;
 
 /**
- * @Description:
+ * @Description: Oracle抽数任务
  * @Author: WangYouzheng
  * @Date: 2023/5/30 14:31
  * @Version: V1.0
  */
+@Slf4j
 public class OracleTask implements DataTask {
 
     /**
      * 启动该任务的配置
      */
-    private OracleCDCConfig oracleCDCConfig;
+    private OracleTaskConfig oracleCDCConfig;
 
     /**
      * 缓存控制器，放在这一层 你可以认为任务后续会管控多线程模式下的抽取动作
      */
     private TransactionManager transactionManager;
+
+    /**
+     * 执行过程中的上下文配置
+     */
+    private BaseContextConfig contextConfig;
 
     /**
      * 控制任务的运转状态，此状态应该迁移到DB
@@ -38,7 +43,7 @@ public class OracleTask implements DataTask {
     // KafkaProducer<Object, Object> producer =
 
     void readConfig() {
-        /***
+        /**
          * 说明1. startscn 》消费scn时  再起启动时候的入参为starscn
          *         2.startscn < 消费scn时  断点续传的scn为 消费scn+1 (其中会出现相同事务提交的数据，出现异常时候的bug)
          */
@@ -57,39 +62,15 @@ public class OracleTask implements DataTask {
             sourceTableList = Lists.newArrayList();
             //sourceTableList = new ArrayList<>();
             //sourceTableList.addAll(Arrays.asList(tableArray));
-        }catch (Exception e){
-            e.printStackTrace();
+        } catch (Exception e) {
+            log.error("启动失败，请配置cdc要抽取检测的表");
+            throw e;
         }
-        this.oracleCDCConfig = OracleCDCConfig.builder().jdbcUrl(jdbcUrl).tables(sourceTableList).username(user).password(pwd).build();
-
-
-        /*String host = PropertiesUtil.getPropsStr()("cdc.oracle.hostname");
-        String port = props.getStr("cdc.oracle.port");
-        String tableArray = props.getStr("cdc.oracle.table.list");
-        String user = props.getStr("cdc.oracle.username");
-        String pwd = props.getStr("cdc.oracle.password");
-        String oracleServer = props.getStr("cdc.oracle.database");
-        KafkaTopicName = props.getStr("kafka.topic");
-        wechatKafkaTopicName = props.getStr("wechat.kafka.topic");
-        listentKafkaTopicName = props.getStr("listen.kafka.topic");
-        schema = props.getStr("cdc.oracle.schema.list");
-        String scnstr = props.getStr("cdc.scnscope");
-        String scnstrmin = props.getStr("cdc.scnscopemin");
-        List<String> sourceTableList = null;
-        startTime = props.getStr("starttime");
-        endTime = props.getStr("endtime");
-        startTimeAfter = props.getStr("startimeafter");
-        endTimeAfter = props.getStr("endtimeafter");
-        scnScope = Integer.valueOf(scnstr);
-        scnScopeMin = Integer.valueOf(scnstrmin);
-        lastScnScope = scnScope;
-        try {
-            sourceTableList = getSourceTableList();
-            //sourceTableList = new ArrayList<>();
-            //sourceTableList.addAll(Arrays.asList(tableArray));
-        }catch (Exception e){
-            e.printStackTrace();
-        }*/
+        // 任务配置
+        this.oracleCDCConfig = OracleTaskConfig.builder().jdbcUrl(jdbcUrl).tables(sourceTableList).username(user).password(pwd).build();
+        // 本地LRU缓存
+        this.transactionManager = new TransactionManager(1000L, 20);
+        //
     }
 
     /**
@@ -100,7 +81,12 @@ public class OracleTask implements DataTask {
         // 初始化配置
         readConfig();
 
+        // 初始化第一个线程的连接
 
+        // 计算要抽数的范围
 
+        // 计算需要的分片
+
+        // 进入多线程抽取模式 猛抽~~
     }
 }
