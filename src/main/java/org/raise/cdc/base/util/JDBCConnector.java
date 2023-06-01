@@ -1,5 +1,6 @@
 package org.raise.cdc.base.util;
 
+import com.alibaba.druid.pool.DruidDataSource;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
@@ -15,14 +16,14 @@ import java.sql.Statement;
  */
 @Slf4j
 public class JDBCConnector {
+    private Connection connection;
+
 
     /**
      * 发送jdbc请求，自带重试
      * @param sql
      */
     public void sendJdbc(String sql) {
-
-
 
     }
 
