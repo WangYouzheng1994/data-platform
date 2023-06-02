@@ -13,5 +13,13 @@ import org.raise.cdc.base.config.DataReadType;
 @Data
 @Builder
 public class OracleConnectorConfig extends OracleTaskConfig {
+    /**
+     * 读取模式
+     * ALL 全量抽取
+     * CURRENT 增量抽取
+     * TIME 根据时间线抽取
+     * SCN 根据指定的便宜量抽取
+     */
     private DataReadType dataReadType;
 }
+

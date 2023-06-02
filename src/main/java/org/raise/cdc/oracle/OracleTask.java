@@ -1,12 +1,15 @@
 package org.raise.cdc.oracle;
 
+import com.alibaba.druid.pool.DruidDataSource;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.raise.cdc.base.config.BaseContextConfig;
 import org.raise.cdc.base.data.DataTask;
 import org.raise.cdc.base.transaction.TransactionManager;
+import org.raise.cdc.base.util.DataSourceUtil;
 import org.raise.cdc.oracle.config.OracleTaskConfig;
 
+import java.sql.SQLException;
 import java.util.List;
 
 import static org.raise.cdc.base.util.PropertiesUtil.getPropsStr;
@@ -36,13 +39,18 @@ public class OracleTask implements DataTask {
     private BaseContextConfig contextConfig;
 
     /**
+     * jdbc连接池
+     */
+    DruidDataSource dataSource;
+
+    /**
      * 控制任务的运转状态，此状态应该迁移到DB
      */
     private boolean runningFlag = true;
 
     // KafkaProducer<Object, Object> producer =
 
-    void readConfig() {
+    void initReadConfig() {
         /**
          * 说明1. startscn 》消费scn时  再起启动时候的入参为starscn
          *         2.startscn < 消费scn时  断点续传的scn为 消费scn+1 (其中会出现相同事务提交的数据，出现异常时候的bug)
@@ -67,19 +75,42 @@ public class OracleTask implements DataTask {
             throw e;
         }
         // 任务配置
-        this.oracleCDCConfig = OracleTaskConfig.builder().jdbcUrl(jdbcUrl).tables(sourceTableList).username(user).password(pwd).build();
+        this.oracleCDCConfig = OracleTaskConfig.builder().jdbcUrl(jdbcUrl).tables(sourceTableList).userName(user).password(pwd).build();
         // 本地LRU缓存
         this.transactionManager = new TransactionManager(1000L, 20);
         //
     }
 
     /**
+     * 初始化datasource
+     */
+    void initJdbcDataSource() {
+
+    }
+
+    /**
+     * 对外启动
+     */
+    @Override
+    public void run() {
+        try {
+            init();
+        } catch (Exception e) {
+            log.error("初始化失败" + e.getMessage(), e);
+            return;
+        }
+    }
+
+    /**
      * 初始化资源
      */
     @Override
-    public void init() {
+    public void init() throws SQLException, ClassNotFoundException {
         // 初始化配置
-        readConfig();
+        initReadConfig();
+
+        // 初始化jdbc连接池
+        this.contextConfig.setDataSource(DataSourceUtil.getDataSource(this.oracleCDCConfig));
 
         // 初始化第一个线程的连接
 

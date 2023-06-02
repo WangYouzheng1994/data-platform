@@ -1,6 +1,5 @@
 package org.raise.cdc.oracle.connector;
 
-import com.alibaba.druid.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.raise.cdc.base.config.DataReadType;
 import org.raise.cdc.base.util.JDBCConnector;
@@ -21,7 +20,6 @@ import java.sql.*;
 @Slf4j
 public class OracleConnector extends JDBCConnector {
     private OracleConnectorContext connContext;
-
     private Connection connection;
 
     /**

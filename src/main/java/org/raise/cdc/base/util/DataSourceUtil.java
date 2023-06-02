@@ -1,6 +1,7 @@
 package org.raise.cdc.base.util;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import org.raise.cdc.oracle.config.OracleTaskConfig;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
@@ -14,32 +15,32 @@ import java.util.Properties;
  * @Version: V1.0
  */
 public class DataSourceUtil {
+
+
     /**
      * 获取德鲁伊数据连接池
      *
-     * @param properties
-     * @param driverName
+     * @param taskConfig
      * @return
      * @throws SQLException
      * @throws ClassNotFoundException
      */
-    public static DataSource getDataSource(Properties properties, String driverName)
+    public static DataSource getDataSource(OracleTaskConfig taskConfig)
             throws SQLException, ClassNotFoundException {
-        Class.forName(driverName);
+        // Class.forName(driverName);
 
-        String jdbcUrl = (String) properties.get(JDBC_URL_KEY);
-        String username = (String) properties.get(USER_NAME_KEY);
-        String password =
-                properties.get(PASSWORD_KEY) == null ? null : (String) properties.get(PASSWORD_KEY);
-        String database = (String) properties.get(DATABASE_KEY);
+        String jdbcUrl = taskConfig.getJdbcUrl();
+        String username = taskConfig.getUsername();
+        String password = taskConfig.getPassword();
+        String driverName = taskConfig.getDriverClass();
+        String taskName = taskConfig.getTaskName();
 
         DruidDataSource dataSource = new DruidDataSource();
-        dataSource.setDriverClassName(driverName);
-        dataSource.setName(database + "-druid.source");
-
         dataSource.setUrl(jdbcUrl);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
+        dataSource.setDriverClassName(driverName);
+        dataSource.setName(taskName + "-druid.source");
         dataSource.setInitialSize(1);
         dataSource.setMinIdle(1);
         dataSource.setMaxActive(5);

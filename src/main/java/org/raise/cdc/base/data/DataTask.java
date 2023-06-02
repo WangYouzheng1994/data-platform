@@ -1,5 +1,7 @@
 package org.raise.cdc.base.data;
 
+import java.sql.SQLException;
+
 /**
  * @Description: 数据任务
  * @Author: WangYouzheng
@@ -7,11 +9,16 @@ package org.raise.cdc.base.data;
  * @Version: V1.0
  */
 public interface DataTask {
+    /**
+     * 对外提供启动方法
+     */
+    void run();
+
 
     /**
      * initialize
      */
-    default void init() {
+    default void init() throws SQLException, ClassNotFoundException {
 
     }
 

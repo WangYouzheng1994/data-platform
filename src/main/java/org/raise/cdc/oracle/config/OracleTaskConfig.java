@@ -16,6 +16,11 @@ import java.util.List;
 @Data
 @Builder
 public class OracleTaskConfig extends BaseStartConfig {
+    /**
+     * 任务名称
+     */
+    private String taskName;
+
     // 默认是增量抽取：除此以外的模式为：all， time, scn
     private DataReadType readPosition = DataReadType.ALL;
 
@@ -44,23 +49,100 @@ public class OracleTaskConfig extends BaseStartConfig {
     private String rs_id;
 
     /**
-     * source jdbc 驱动连接
+     * jdbc连接配置
      */
-    private String jdbcUrl;
+    private JdbcConfig jdbcConfig;
+
+    //创建builder方法，返回一个构建器
+    public static OracleTaskConfigBuilder builder() {
+        return new OracleTaskConfigBuilder();
+    }
 
     /**
-     * source jdbc username
+     * 数据库连接配置
+     *
+     * @return
      */
-    private String username;
+    public String getJdbcUrl() {
+        return jdbcConfig.getJdbcUrl();
+    }
 
     /**
-     * source jdbc password
+     * 登录账号
+     *
+     * @return
      */
-    private String password;
+    public String getUsername() {
+        return jdbcConfig.getUsername();
+    }
 
     /**
-     * source jdbc 驱动类class
+     * 驱动的全路径类名
+     *
+     * @return
      */
-    private String driverClass;
+    public String getDriverClass() {
+        return jdbcConfig.getDriverClass();
+    }
 
+    /**
+     * 获取密码
+     *
+     * @return
+     */
+    public String getPassword() {
+        return jdbcConfig.getPassword();
+    }
+
+    /**
+     * TaskConfigBuilder
+     */
+    public static class OracleTaskConfigBuilder {
+
+        public OracleTaskConfigBuilder jdbcUrl(String jdbcUrl) {
+            this.jdbcConfig.jdbcUrl = jdbcUrl;
+            return this;
+        }
+
+        public OracleTaskConfigBuilder userName(String userName) {
+            this.jdbcConfig.jdbcUrl = userName;
+            return this;
+        }
+
+        public OracleTaskConfigBuilder password(String password) {
+            this.jdbcConfig.password = password;
+            return this;
+        }
+
+        public OracleTaskConfigBuilder driverClass(String driverClass) {
+            this.jdbcConfig.driverClass = driverClass;
+            return this;
+        }
+    }
+
+    /**
+     * jdbc配置
+     */
+    @Data
+    private class JdbcConfig {
+        /**
+         * source jdbc 驱动连接
+         */
+        private String jdbcUrl;
+
+        /**
+         * source jdbc username
+         */
+        private String username;
+
+        /**
+         * source jdbc password
+         */
+        private String password;
+
+        /**
+         * source jdbc 驱动类class
+         */
+        private String driverClass;
+    }
 }
