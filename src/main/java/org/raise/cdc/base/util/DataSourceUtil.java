@@ -43,11 +43,11 @@ public class DataSourceUtil {
         dataSource.setName(taskName + "-druid.source");
         dataSource.setInitialSize(1);
         dataSource.setMinIdle(1);
-        dataSource.setMaxActive(5);
+        dataSource.setMaxActive(30);
         dataSource.setMaxWait(30000);
         dataSource.setTimeBetweenEvictionRunsMillis(60000);
         dataSource.setMinEvictableIdleTimeMillis(300000);
-        dataSource.setValidationQuery("select 'x'");
+        dataSource.setValidationQuery("select 'x' from dual");
         dataSource.setTestWhileIdle(true);
         dataSource.setTestOnBorrow(false);
         dataSource.setTestOnReturn(false);
