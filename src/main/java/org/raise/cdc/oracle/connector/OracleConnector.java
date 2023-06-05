@@ -10,6 +10,7 @@ import org.raise.cdc.oracle.mapper.SqlUtil;
 
 import java.math.BigInteger;
 import java.sql.*;
+import java.util.List;
 
 /**
  * @Description: 核心处理类，线程（JDBCConnect也是一个链接）
@@ -86,6 +87,12 @@ public class OracleConnector extends JDBCConnector {
         return result;
     }
 
+    /**
+     * 获取起始SCN号
+     *
+     * @param startScn
+     * @return
+     */
     public BigInteger getStartSCN(BigInteger startScn) {
         // 如果从保存点模式开始 并且不是0 证明保存点是ok的
         if (startScn != null && startScn.compareTo(BigInteger.ZERO) != 0) {
@@ -141,7 +148,7 @@ public class OracleConnector extends JDBCConnector {
     }
 
     /**
-     * 获取当前SCN
+     * 获取当前SCN （即最大SCN号） 适用于增量模式
      *
      * @param connection
      * @return
@@ -166,4 +173,33 @@ public class OracleConnector extends JDBCConnector {
             closeResources(currentScnResultSet, currentScnStmt, null);
         }
     }
+
+
+    // --------------- 快照 ------
+
+    /***
+     *  初始化全量数据
+     */
+    private void initOracleAllData(OracleCDCConnection oracleCDCConnect) {
+        //获取当前需要查询的数据表
+        List<String> tableList = oracleCDCConfig.getTable();
+        //获取当前的scn
+        BigInteger currentMaxScn = null;
+        Connection connection = oracleCDCConnect.getConnection();
+        // 获取当前数据库的最大偏移量
+        currentMaxScn = oracleCDCConnect.getCurrentScn(connection);
+        //遍历
+        for (String tableName:tableList) {
+            log.info("初始化表："+tableName);
+            oracleCDCConnect.initOracleAllDataConnect(connection,currentMaxScn,producer,KafkaTopicName,wechatKafkaTopicName,schema,tableName);
+        }
+        //赋值startscn 与endscn
+        this.startScn =currentMaxScn;
+        this.endScn =currentMaxScn;
+        oracleCDCConnect.setEndScn(this.endScn);
+        this.currentSinkPosition =this.endScn;
+        //输出一下日志
+        log.info("初始化init 闪回数据已完毕");
+    }
+
 }

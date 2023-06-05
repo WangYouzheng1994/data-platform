@@ -9,6 +9,7 @@ import org.raise.cdc.base.transaction.TransactionManager;
 import org.raise.cdc.base.util.DataSourceUtil;
 import org.raise.cdc.oracle.config.OracleTaskConfig;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -21,7 +22,7 @@ import static org.raise.cdc.base.util.PropertiesUtil.getPropsStr;
  * @Version: V1.0
  */
 @Slf4j
-public class OracleTask implements DataTask {
+public class OracleLogminerTask implements DataTask {
 
     /**
      * 启动该任务的配置
@@ -41,7 +42,13 @@ public class OracleTask implements DataTask {
     /**
      * jdbc连接池
      */
-    DruidDataSource dataSource;
+    private DruidDataSource dataSource;
+
+    /**
+     * 当前任务所有的jdbc链接（其实就是每个logminer）
+     * TODO： 后续要转成OracleConnection
+     */
+    private List<Connection> connections;
 
     /**
      * 控制任务的运转状态，此状态应该迁移到DB
@@ -82,9 +89,16 @@ public class OracleTask implements DataTask {
     }
 
     /**
-     * 初始化datasource
+     * 从数据源中获取jdbc链接
      */
-    void initJdbcDataSource() {
+    void getConnection() throws SQLException {
+        this.connections.add(this.contextConfig.getDataSource().getConnection());
+    }
+
+    /**
+     * 初始化LogminerConnection
+     */
+    void startLogminerConnection() {
 
     }
 
@@ -112,7 +126,9 @@ public class OracleTask implements DataTask {
         // 初始化jdbc连接池
         this.contextConfig.setDataSource(DataSourceUtil.getDataSource(this.oracleCDCConfig));
 
-        // 初始化第一个线程的连接
+        // 初始化第一个jdbc连接
+        getConnection();
+        //
 
         // 计算要抽数的范围
 
