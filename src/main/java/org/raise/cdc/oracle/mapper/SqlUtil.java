@@ -1,5 +1,7 @@
 package org.raise.cdc.oracle.mapper;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * @Description:
  * @Author: WangYouzheng
@@ -59,4 +61,25 @@ public class SqlUtil {
                     + "  SYS.DBMS_LOGMNR.start_logmnr(       options =>          SYS.DBMS_LOGMNR.skip_corruption        + SYS.DBMS_LOGMNR.no_sql_delimiter        + SYS.DBMS_LOGMNR.no_rowid_in_stmt\n"
                     + "  + SYS.DBMS_LOGMNR.dict_from_online_catalog    );\n"
                     + "   end;";
+
+
+    /**
+     * 根据SCN闪回指定表的数据
+     */
+    public static final String SQL_FLASH_TABLE_SCN = "SELECT * FROM %s AS OF SCN %s";
+
+    /**
+     * 格式化SQL模板替换
+     *
+     * @param sqlTemplate
+     * @param params
+     * @return
+     */
+    public static String formatSQL(String sqlTemplate, String... params) {
+        String result = StringUtils.EMPTY;
+        if (StringUtils.isNotBlank(sqlTemplate)) {
+            result = String.format(sqlTemplate, params);
+        }
+        return result;
+    }
 }

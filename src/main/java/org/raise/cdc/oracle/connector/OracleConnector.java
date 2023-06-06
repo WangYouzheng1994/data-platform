@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.raise.cdc.base.config.BaseContextConfig;
-import org.raise.cdc.base.config.ConnectorContext;
 import org.raise.cdc.base.config.DataReadType;
 import org.raise.cdc.base.util.JDBCConnector;
 import org.raise.cdc.oracle.config.OracleConnectorConfig;
@@ -13,7 +12,6 @@ import org.raise.cdc.oracle.config.OracleTaskConfig;
 import org.raise.cdc.oracle.constants.LogminerKeyConstants;
 import org.raise.cdc.oracle.mapper.SqlUtil;
 
-import javax.sql.DataSource;
 import java.math.BigInteger;
 import java.sql.*;
 import java.util.ArrayList;
@@ -97,7 +95,7 @@ public class OracleConnector extends JDBCConnector {
                 closeResources(null, null, connection);
                 interval++;
             }
-        } while(interval < 3);
+        } while (interval < 3);
 
         interval = 1;
         // 设置编码和日期类型
@@ -113,7 +111,7 @@ public class OracleConnector extends JDBCConnector {
                 closeResources(null, null, connection);
                 interval++;
             }
-        } while(interval < 3);
+        } while (interval < 3);
 
         boolean result = false;
         if (connection == null) {
@@ -150,7 +148,7 @@ public class OracleConnector extends JDBCConnector {
         }/* else if (DataReadType.SCN.name().equalsIgnoreCase(oracleCDCConfig.getReadPosition())) {
             // 根据指定的scn获取对应日志文件的起始位置
 
-        } */else {
+        } */ else {
 
         }
         return startScn;
@@ -223,8 +221,8 @@ public class OracleConnector extends JDBCConnector {
         // 获取当前数据库的最大偏移量
         BigInteger currentMaxScn = getCurrentScn();
         //遍历
-        for (String tableName:tableList) {
-            log.info("初始化表："+tableName);
+        for (String tableName : tableList) {
+            log.info("初始化表：" + tableName);
             doInitOracleAllData(currentMaxScn, tableName);
         }
         //赋值startscn 与endscn
@@ -244,9 +242,9 @@ public class OracleConnector extends JDBCConnector {
      */
     private void doInitOracleAllData(BigInteger currentMaxScn, String tableName) {
         PreparedStatement preparedStatement = null;
-        ResultSet rs= null;
+        ResultSet rs = null;
         try {
-            String sql = "SELECT * FROM "+tableName+" AS OF SCN "+currentMaxScn;
+            String sql = SqlUtil.formatSQL(SqlUtil.SQL_FLASH_TABLE_SCN, tableName, currentMaxScn.toString());
             preparedStatement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
             preparedStatement.setFetchSize(10000);
             preparedStatement.setQueryTimeout(600);
@@ -255,51 +253,51 @@ public class OracleConnector extends JDBCConnector {
             //preparedStatement.setInt(2,currentMaxScn.intValue());
             //执行
             //log.info("表："+tableName+",开始查询");
-            rs= preparedStatement.executeQuery();
+            rs = preparedStatement.executeQuery();
             //log.info("表："+tableName+",查询结束");
             //检索列名列表
             ResultSetMetaData rsMetaData = rs.getMetaData();
             int count = rsMetaData.getColumnCount();
             //封装数据，如果是date类型额外处理
-            List<String>  columnList = new ArrayList<>();
-            List<String>  typeList = new ArrayList<>();
-            for(int i = 1; i<=count; i++) {
+            List<String> columnList = new ArrayList<>();
+            List<String> typeList = new ArrayList<>();
+            for (int i = 1; i <= count; i++) {
                 typeList.add(rsMetaData.getColumnTypeName(i));
                 columnList.add(rsMetaData.getColumnName(i));
             }
             //取数据
             //int j=0;
-            Map<String,String> map = null;
-            Map<String,Object> kafkaData = new HashMap<>();
-            while(rs.next()) {
+            Map<String, String> map = null;
+            Map<String, Object> kafkaData = new HashMap<>();
+            while (rs.next()) {
                 // startTime=System.currentTimeMillis();
-                map= new HashMap<>();
+                map = new HashMap<>();
                 //遍历拼接数据
-                for (int i =0;i<columnList.size();i++) {
+                for (int i = 0; i < columnList.size(); i++) {
                     String colum = columnList.get(i);
                     String value = rs.getString(colum);
                     //判断如果是日期类型
-                    if("DATE".equals(typeList.get(i))){
+                    if ("DATE".equals(typeList.get(i))) {
                         //格式化时间
-                        if(StringUtils.isNoneBlank(value))
+                        if (StringUtils.isNoneBlank(value))
                             value = dateToStamp(value);
                     }
-                    if("TIMESTAMP".equals(typeList.get(i))){
+                    if ("TIMESTAMP".equals(typeList.get(i))) {
                         //格式化时间
-                        if(StringUtils.isNoneBlank(value))
+                        if (StringUtils.isNoneBlank(value))
                             value = dateToStamp(value);
                     }
-                    map.put(colum,value);
+                    map.put(colum, value);
                 }
                 // TODO：此处需要做成动态的序列化接口，借以适配下游的自定义能力，因此应该把数据推送给本身组件内部的缓存。
                 //封装kafkaDate数据
-                kafkaData.put("after",map);
-                kafkaData.put("before","");
+                kafkaData.put("after", map);
+                kafkaData.put("before", "");
                 // kafkaData.put("database",schema);
-                kafkaData.put("scn",currentMaxScn);
-                kafkaData.put("tableName",tableName.split("\\.")[1]);
-                kafkaData.put("ts",System.currentTimeMillis());
-                kafkaData.put("type","insert");
+                kafkaData.put("scn", currentMaxScn);
+                kafkaData.put("tableName", tableName.split("\\.")[1]);
+                kafkaData.put("ts", System.currentTimeMillis());
+                kafkaData.put("type", "insert");
                 //json格式输出数据
                 String kafkaStr = JSON.toJSONString(kafkaData);
                 // 推送给内部缓存
@@ -316,7 +314,7 @@ public class OracleConnector extends JDBCConnector {
             producer.send(new ProducerRecord<>(wechatKafkaTopicName, JSONObject.toJSONString(textMsgBean)));*/
             //初始化失败
             throw new RuntimeException(e);
-        }finally {
+        } finally {
             try {
                 preparedStatement.close();
                 rs.close();
