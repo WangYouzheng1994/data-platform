@@ -8,6 +8,7 @@ import org.raise.cdc.base.data.DataTask;
 import org.raise.cdc.base.transaction.TransactionManager;
 import org.raise.cdc.base.util.DataSourceUtil;
 import org.raise.cdc.oracle.config.OracleTaskConfig;
+import org.raise.cdc.oracle.connector.OracleConnector;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -27,7 +28,7 @@ public class OracleLogminerTask implements DataTask {
     /**
      * 启动该任务的配置
      */
-    private OracleTaskConfig oracleCDCConfig;
+    private OracleTaskConfig oracleTaskConfig;
 
     /**
      * 缓存控制器，放在这一层 你可以认为任务后续会管控多线程模式下的抽取动作
@@ -82,7 +83,9 @@ public class OracleLogminerTask implements DataTask {
             throw e;
         }
         // 任务配置
-        this.oracleCDCConfig = OracleTaskConfig.builder().jdbcUrl(jdbcUrl).tables(sourceTableList).userName(user).password(pwd).build();
+        this.oracleTaskConfig = OracleTaskConfig.builder().jdbcUrl(jdbcUrl).tables(sourceTableList).userName(user).password(pwd).build();
+        this.contextConfig = new BaseContextConfig();
+        this.contextConfig.setTaskConfig(oracleTaskConfig);
         // 本地LRU缓存
         this.transactionManager = new TransactionManager(1000L, 20);
         //
@@ -91,8 +94,23 @@ public class OracleLogminerTask implements DataTask {
     /**
      * 从数据源中获取jdbc链接
      */
-    void getConnection() throws SQLException {
+/*    void getConnection() throws SQLException {
+        *//*Connection connection = this.contextConfig.getDataSource().getConnection();
+        try (PreparedStatement preparedStatement =
+                     connection.prepareStatement(SqlUtil.SQL_ALTER_NLS_SESSION_PARAMETERS)) {
+            // preparedStatement.setQueryTimeout(logMinerConfig.getQueryTimeout().intValue());
+            preparedStatement.execute();
+            interval = 5;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            closeResources(null, null, connection);
+            interval++;
+        }*//*
         this.connections.add(this.contextConfig.getDataSource().getConnection());
+    }*/
+
+    void snapShot() {
+
     }
 
     /**
@@ -121,13 +139,20 @@ public class OracleLogminerTask implements DataTask {
     @Override
     public void init() throws SQLException, ClassNotFoundException {
         // 初始化配置
-        initReadConfig();
+        this.initReadConfig();
 
         // 初始化jdbc连接池
-        this.contextConfig.setDataSource(DataSourceUtil.getDataSource(this.oracleCDCConfig));
+        this.contextConfig.setDataSource(DataSourceUtil.getDataSource(this.oracleTaskConfig));
+        OracleConnector initialConnect = OracleConnector.init(this.contextConfig);
+
+        // 判定当前的模式，先默认全量转增量
+        // 断点续传后面重新考虑实现，比如提供的scn已经失效，那么就还是全量转增量，暂时先实现scn的模式
+        // TODO:这里要转成多线程ComplatebleFuture异步通知模式，自主启动全量转增量
+        this.snapShot();
+
 
         // 初始化第一个jdbc连接
-        getConnection();
+        // getConnection();
         //
 
         // 计算要抽数的范围
