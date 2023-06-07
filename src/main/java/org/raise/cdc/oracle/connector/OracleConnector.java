@@ -225,6 +225,7 @@ public class OracleConnector extends JDBCConnector {
                     map.put(colum, value);
                 }
                 // TODO：此处需要做成动态的序列化接口，借以适配下游的自定义能力，因此应该把数据推送给本身组件内部的缓存。
+
                 //封装kafkaDate数据
                 kafkaData.put("after", map);
                 kafkaData.put("before", "");
@@ -236,6 +237,7 @@ public class OracleConnector extends JDBCConnector {
                 //json格式输出数据
                 String kafkaStr = JSON.toJSONString(kafkaData);
                 // 推送给内部缓存
+                sinkProcess.sink(kafkaStr);
                 // producer.send(new ProducerRecord<>(KafkaTopicName, kafkaStr));
             }
         } catch (SQLException e) {

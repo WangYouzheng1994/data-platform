@@ -24,6 +24,8 @@ public class DataProcessKafka implements DataProcess {
     /**
      * 处理数据，然后调用sink()推送
      *
+     * TODO：因为当前版本涉及到多线程有序推数据的问题，需要考虑是否要在此方法中进行二次的排序。还在构思中。。。
+     *
      * @return
      */
     public Object process(Object obj) {
