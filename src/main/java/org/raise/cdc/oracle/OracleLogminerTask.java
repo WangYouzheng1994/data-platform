@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.raise.cdc.base.config.BaseContextConfig;
+import org.raise.cdc.base.data.DataProcessKafka;
 import org.raise.cdc.base.transaction.TransactionManager;
 import org.raise.cdc.base.util.DataSourceUtil;
 import org.raise.cdc.oracle.config.OracleTaskConfig;
@@ -23,6 +24,7 @@ import static org.raise.cdc.base.util.PropertiesUtil.getPropsStr;
 
 /**
  * @Description: Oracle抽数任务
+ * https://www.cnblogs.com/PiscesCanon/p/14447351.html
  * @Author: WangYouzheng
  * @Date: 2023/5/30 14:31
  * @Version: V1.0
@@ -30,26 +32,15 @@ import static org.raise.cdc.base.util.PropertiesUtil.getPropsStr;
 @Slf4j
 public class OracleLogminerTask extends AbstractOracleTask {
 
-
     /**
      * 启动该任务的配置
      */
     private OracleTaskConfig oracleTaskConfig;
 
     /**
-     * 缓存控制器，放在这一层 你可以认为任务后续会管控多线程模式下的抽取动作
-     */
-    private TransactionManager transactionManager;
-
-    /**
      * 执行过程中的上下文配置
      */
     private BaseContextConfig contextConfig;
-
-    /**
-     * jdbc连接池
-     */
-    private DruidDataSource dataSource;
 
     /**
      * 当前任务所有的jdbc链接（其实就是每个logminer）
@@ -98,8 +89,7 @@ public class OracleLogminerTask extends AbstractOracleTask {
         this.contextConfig = new BaseContextConfig();
         this.contextConfig.setTaskConfig(oracleTaskConfig);
         // 本地LRU缓存
-        this.transactionManager = new TransactionManager(1000L, 20);
-        //
+        this.contextConfig.setTransactionManager(new TransactionManager(4000L, 20));
     }
 
     /**
@@ -128,10 +118,11 @@ public class OracleLogminerTask extends AbstractOracleTask {
                     e.printStackTrace();
                     throw new RuntimeException(e);
                 }
-                return CompletableFuture.supplyAsync(FlashInitTableHandler.builder().connector(split).tables(tables).build(), executorService);
+                return CompletableFuture.supplyAsync(FlashInitTableHandler.builder().currentMaxScn(currentScn).connector(split).tables(tables).build(), executorService);
             }).toArray(CompletableFuture[]::new);
 
             CompletableFuture.allOf(snapShotResult).join();
+            // close连接。
             log.info("snapshot 结束了哈~");
             return true;
         } else {
@@ -142,9 +133,18 @@ public class OracleLogminerTask extends AbstractOracleTask {
 
     /**
      * 初始化LogminerConnection
+     * 这里多线程有两种实现思路 一种是，单线程挖掘，多线程读取， 在一种是多线程挖掘，多线程获取。 目前不清楚多线程logminer对服务器的影响，因此从理论上多线程挖掘为切入点，随后进入到生产环境测试压力。
      */
     void startLogminerConnection() {
+        // addlog
 
+        // 开启logminer日志挖掘  此处需要多线程进行挖掘
+
+        // 挖掘结束后，进行$log_content结果收集，多线程查询
+
+        // 顺序怼到消费队列中，此处需要多线程处理好一致性
+
+        // 自旋，当查询到的已经不在归档中以后，重新加载日志挖掘。控制好并行度即可。
     }
 
     /**
@@ -158,7 +158,7 @@ public class OracleLogminerTask extends AbstractOracleTask {
         // 初始化jdbc连接池
         this.contextConfig.setDataSource(DataSourceUtil.getDataSource(this.oracleTaskConfig));
 
-        // TODO： 使用snapshot + 增量抽取的并行度的和
+        // TODO：使用snapshot + 增量抽取的并行度的和
         executorService = Executors.newFixedThreadPool(oracleTaskConfig.getSnapShotParallelism());
 
         // 计算要抽数的范围
@@ -177,13 +177,16 @@ public class OracleLogminerTask extends AbstractOracleTask {
 
         // 判定当前的模式，先默认全量转增量
         // 断点续传后面重新考虑实现，比如提供的scn已经失效，那么就还是全量转增量，暂时先实现scn的模式
-        // TODO:这里要转成多线程ComplatebleFuture异步通知模式，自主启动全量转增量
         try {
-            this.snapShot();
+            Boolean snapBoo = this.snapShot();
         } catch (SQLException e) {
             log.error("快照抽数异常！");
             log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         }
+
+        // 切换到日志读取模式
+        this.startLogminerConnection();
     }
 
     /**
@@ -210,19 +213,18 @@ public class OracleLogminerTask extends AbstractOracleTask {
     @Builder
     @Data
     private class FlashInitTableHandler implements Supplier {
-        private List<String> tables;
-        private OracleConnector connector;
-
         /**
-         * Computes a result, or throws an exception if unable to do so.
-         *
-         * @return computed result
-         * @throws Exception if unable to compute a result
+         * 要抽取的表
          */
-       /* @Override
-        public Object call() throws Exception {
-
-        }*/
+        private List<String> tables;
+        /**
+         * 连接任务
+         */
+        private OracleConnector connector;
+        /**
+         * 最大的scn水位线
+         */
+        private BigInteger currentMaxScn;
 
         /**
          * Gets a result.
@@ -231,10 +233,13 @@ public class OracleLogminerTask extends AbstractOracleTask {
          */
         @Override
         public Object get() {
-            if (CollectionUtils.isNotEmpty(tables)) {
-
+            if (CollectionUtils.isNotEmpty(tables) && connector != null) {
+                tables.stream().forEach(tableName -> {
+                    connector.doInitOracleAllData(currentMaxScn, tableName, new DataProcessKafka());
+                });
+                return true;
             }
-            return null;
+            return false;
         }
     }
 }

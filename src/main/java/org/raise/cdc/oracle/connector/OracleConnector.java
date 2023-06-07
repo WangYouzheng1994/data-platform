@@ -6,9 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.raise.cdc.base.config.BaseContextConfig;
 import org.raise.cdc.base.config.DataReadType;
+import org.raise.cdc.base.data.DataProcess;
 import org.raise.cdc.base.util.JDBCConnector;
 import org.raise.cdc.oracle.config.OracleConnectorConfig;
-import org.raise.cdc.oracle.config.OracleTaskConfig;
 import org.raise.cdc.oracle.constants.LogminerKeyConstants;
 import org.raise.cdc.oracle.mapper.SqlUtil;
 
@@ -156,10 +156,10 @@ public class OracleConnector extends JDBCConnector {
         // 获取当前数据库的最大偏移量
         BigInteger currentMaxScn = getCurrentScn();
         //遍历
-        for (String tableName : tableList) {
+/*        for (String tableName : tableList) {
             log.info("初始化表：" + tableName);
-            doInitOracleAllData(currentMaxScn, tableName);
-        }
+            doInitOracleAllData(currentMaxScn, tableName, );
+        }*/
         //赋值startscn 与endscn
 /*        this.startScn =currentMaxScn;
         this.endScn =currentMaxScn;
@@ -171,11 +171,11 @@ public class OracleConnector extends JDBCConnector {
 
     /**
      * 根据scn，获取指定表的全量闪回数据
-     *
-     * @param currentMaxScn
+     *  @param currentMaxScn
      * @param tableName
+     * @param sinkProcess
      */
-    private void doInitOracleAllData(BigInteger currentMaxScn, String tableName) {
+    public void doInitOracleAllData(BigInteger currentMaxScn, String tableName, DataProcess sinkProcess) {
         PreparedStatement preparedStatement = null;
         ResultSet rs = null;
         try {

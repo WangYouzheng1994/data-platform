@@ -10,14 +10,15 @@ public interface DataProcess {
     /**
      * 对外输出数据
      * @return
+     * @param obj
      */
-    int sink();
+    int sink(Object obj);
 
-    /**
+/*    *//**
      * 处理数据，然后调用sink()推送
      *
      * @return
-     */
-    int process();
+     *//*
+    int process();*/
 
 }

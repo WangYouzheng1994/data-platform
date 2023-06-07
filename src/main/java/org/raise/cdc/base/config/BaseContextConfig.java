@@ -1,6 +1,7 @@
 package org.raise.cdc.base.config;
 
 import lombok.Data;
+import org.raise.cdc.base.transaction.TransactionManager;
 import org.raise.cdc.oracle.config.OracleTaskConfig;
 
 import javax.sql.DataSource;
@@ -21,6 +22,11 @@ public class BaseContextConfig {
     private DataSource dataSource;
 
     /**
+     * 缓存控制器，放在这一层 你可以认为任务后续会管控多线程模式下的抽取动作
+     */
+    private TransactionManager transactionManager;
+
+    /**
      * 指定SCN抽取  SCN模式
      */
     private AtomicLong startSCN;
@@ -39,6 +45,11 @@ public class BaseContextConfig {
      * 当前执行的SCN
      */
     private AtomicLong currentSCN;
+
+    /**
+     * 实际抽取到的数据的SCN号，因此当前的这个版本jdbc的抽取fetch和stepSCN是相同参数，切记步进过大会内存溢出，多线程就是时间换空间，此版本可以优化成 先count 然后让多个线程拉齐，（以后再说吧）
+     */
+    private AtomicLong currentPositionSCN;
 
 
     /**
