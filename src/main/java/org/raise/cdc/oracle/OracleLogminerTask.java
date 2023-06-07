@@ -48,6 +48,9 @@ public class OracleLogminerTask extends AbstractOracleTask {
      */
     private List<OracleConnector> connections;
 
+    /**
+     * 并行任务的线程池，
+     */
     private ExecutorService executorService;
 
     /**
@@ -96,7 +99,7 @@ public class OracleLogminerTask extends AbstractOracleTask {
      * 快照数据
      * 根据当前的currentScn，进行闪回数据生成，理论上来说如果snapshot速度快，数据少，这个阶段做完直接进redo，但是不排除数据多 或者日志调的太小，出完数进入到归档了
      */
-    Boolean snapShot() throws SQLException {
+    private Boolean snapShot() throws SQLException {
         OracleConnector initialConnect = OracleConnector.init(this.contextConfig);
         // 当前的scn，理论上来说如果snapshot速度快，数据少，这个阶段做完直接进redo，但是不排除数据多 或者日志调的太小，出完数进入到归档了
         BigInteger currentScn = initialConnect.getCurrentScn();
@@ -135,7 +138,7 @@ public class OracleLogminerTask extends AbstractOracleTask {
      * 初始化LogminerConnection
      * 这里多线程有两种实现思路 一种是，单线程挖掘，多线程读取， 在一种是多线程挖掘，多线程获取。 目前不清楚多线程logminer对服务器的影响，因此从理论上多线程挖掘为切入点，随后进入到生产环境测试压力。
      */
-    void startLogminerConnection() {
+    private void startLogminerConnection() {
         // addlog
 
         // 开启logminer日志挖掘  此处需要多线程进行挖掘
@@ -198,14 +201,14 @@ public class OracleLogminerTask extends AbstractOracleTask {
     }
 
 
-    /**
+/*    *//**
      * 任务级别的创建OracleConnection，并且分配任务
      *
      * @return
-     */
+     *//*
     private Boolean createSubTask() {
         return null;
-    }
+    }*/
 
     /**
      * 闪回执行线程
