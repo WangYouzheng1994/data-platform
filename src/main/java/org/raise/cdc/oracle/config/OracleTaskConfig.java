@@ -56,7 +56,7 @@ public class OracleTaskConfig extends BaseStartConfig {
     /**
      * 全量快照并行度（线程数量）影响到各个任务执行的表个数
      */
-    private Long snapShotParallelism;
+    private Short snapShotParallelism;
 
     //创建builder方法，返回一个构建器
     public static OracleTaskConfigBuilder builder() {

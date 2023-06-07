@@ -4,6 +4,7 @@ import lombok.Data;
 import org.raise.cdc.oracle.config.OracleTaskConfig;
 
 import javax.sql.DataSource;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -19,16 +20,26 @@ public class BaseContextConfig {
      */
     private DataSource dataSource;
 
-    // 指定SCN抽取  SCN模式
+    /**
+     * 指定SCN抽取  SCN模式
+     */
     private AtomicLong startSCN;
 
-    // 指定SCN结束  SCN模式
+    /**
+     * 指定SCN结束  SCN模式
+     */
     private AtomicLong endSCN;
+
+    /**
+     * 每次SCN的步进量
+     */
+    private AtomicInteger stepSCN;
 
     /**
      * 当前执行的SCN
      */
     private AtomicLong currentSCN;
+
 
     /**
      * 启动任务的参数数据
@@ -42,5 +53,16 @@ public class BaseContextConfig {
      */
     enum TaskStatus {
 
+    }
+
+    /**
+     * 获取当前任务的抽取最大值，作为下一轮的START
+     *
+     * curretnSCN + (stepSCN/并发数)
+     *
+     * @return
+     */
+    public Long getCurrentStartSCN() {
+        return currentSCN.getAndAdd(stepSCN.get());
     }
 }

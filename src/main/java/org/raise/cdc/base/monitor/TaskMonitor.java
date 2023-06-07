@@ -14,7 +14,7 @@ public interface TaskMonitor {
     void init();
 
     /**
-     * 心跳检测
+     * 心跳检测的信息上报
      * @return
      */
     boolean heartbeat();
@@ -22,6 +22,6 @@ public interface TaskMonitor {
     /**
      * 对外发出警告
      */
-    void warning();
+    String warning();
 
 }

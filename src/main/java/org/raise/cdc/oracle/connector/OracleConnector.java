@@ -31,7 +31,7 @@ import static org.raise.cdc.base.util.DateUtils.dateToStamp;
 @Slf4j
 public class OracleConnector extends JDBCConnector {
     private OracleConnectorContext connContext;
-    private Connection connection;
+    // private Connection connection;
 
     /**
      * OracleConnector静态工厂
@@ -53,7 +53,7 @@ public class OracleConnector extends JDBCConnector {
     void internalInit(BaseContextConfig contextConfig) throws SQLException {
         this.connContext = new OracleConnectorContext<>();
         connContext.setContextConfig(contextConfig);
-        connection = contextConfig.getDataSource().getConnection();
+        this.connection = contextConfig.getDataSource().getConnection();
     }
 
     /**
@@ -146,8 +146,9 @@ public class OracleConnector extends JDBCConnector {
 
     /**
      * 初始化全量数据
-     * TODO:此数据逻辑涉及到scn的 应该提取到 task层，由task下发给connector执行
+     * @deprecated TODO:此数据逻辑涉及到scn的 应该提取到 task层，由task下发给connector执行
      */
+    @Deprecated
     private void initOracleAllData() {
         OracleConnectorConfig connectorConfig = connContext.getConnectorConfig();
         //获取当前需要查询的数据表
