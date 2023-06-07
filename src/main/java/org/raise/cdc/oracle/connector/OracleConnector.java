@@ -34,14 +34,6 @@ public class OracleConnector extends JDBCConnector {
     private Connection connection;
 
     /**
-     * 初始化线程
-     */
-    void init(OracleConnectorConfig config) {
-        // 初始化连接
-        getConnection(config);
-    }
-
-    /**
      * OracleConnector静态工厂
      *
      * @param contextConfig
@@ -62,64 +54,6 @@ public class OracleConnector extends JDBCConnector {
         this.connContext = new OracleConnectorContext<>();
         connContext.setContextConfig(contextConfig);
         connection = contextConfig.getDataSource().getConnection();
-    }
-
-    /**
-     * 加载驱动，创建连接
-     * 废弃，初始化的SQL已经交由DruidDataSource来做了
-     *
-     * @param config
-     * @return
-     */
-    @Deprecated
-    public boolean getConnection(OracleTaskConfig config) {
-        int interval = 1;
-        log.debug("connection driver class: {}", config.getDriverClass());
-        log.info("connection user: {}", config.getUsername());
-        log.info("connection password: {}", config.getPassword());
-
-        // 加载驱动
-        try {
-            Class.forName(config.getDriverClass());
-        } catch (ClassNotFoundException e) {
-            log.error(e.getMessage(), e);
-            return false;
-        }
-
-        do {
-            try {
-                connection = DriverManager.getConnection(config.getJdbcUrl(), config.getUsername(), config.getPassword());
-                interval = 5;
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
-                closeResources(null, null, connection);
-                interval++;
-            }
-        } while (interval < 3);
-
-        interval = 1;
-        // 设置编码和日期类型
-        // 获取当前Oracle的字符集。
-        do {
-            try (PreparedStatement preparedStatement =
-                         connection.prepareStatement(SqlUtil.SQL_ALTER_NLS_SESSION_PARAMETERS)) {
-                // preparedStatement.setQueryTimeout(logMinerConfig.getQueryTimeout().intValue());
-                preparedStatement.execute();
-                interval = 5;
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
-                closeResources(null, null, connection);
-                interval++;
-            }
-        } while (interval < 3);
-
-        boolean result = false;
-        if (connection == null) {
-            result = false;
-        } else {
-            result = true;
-        }
-        return result;
     }
 
     /**

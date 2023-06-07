@@ -17,16 +17,18 @@
  */
 package org.raise.cdc.oracle.bean;
 
+import org.raise.cdc.base.data.LogFile;
+
 import java.math.BigInteger;
 import java.util.Objects;
 
 /**
- * 每个日志(归档和重做)的信息
+ * Oracle 每个日志(归档和重做)的信息
  *
  * @author jiangbo
  * @date 2020/3/31
  */
-public class LogFile {
+public class OracleLogFile extends LogFile {
 
     /**
      * 日志名称
@@ -153,12 +155,12 @@ public class LogFile {
             return false;
         }
 
-        LogFile logFile = (LogFile) o;
-        return Objects.equals(fileName, logFile.fileName)
-                && Objects.equals(firstChange, logFile.firstChange)
-                && Objects.equals(thread, logFile.thread)
-                && Objects.equals(nextChange, logFile.nextChange)
-                && Objects.equals(type, logFile.type);
+        OracleLogFile oracleLogFile = (OracleLogFile) o;
+        return Objects.equals(fileName, oracleLogFile.fileName)
+                && Objects.equals(firstChange, oracleLogFile.firstChange)
+                && Objects.equals(thread, oracleLogFile.thread)
+                && Objects.equals(nextChange, oracleLogFile.nextChange)
+                && Objects.equals(type, oracleLogFile.type);
     }
 
     @Override

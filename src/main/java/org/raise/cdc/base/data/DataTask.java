@@ -12,29 +12,12 @@ public interface DataTask {
     /**
      * 对外提供启动方法
      */
-    void run();
-
-
-    /**
-     * initialize
-     */
-    default void init() throws SQLException, ClassNotFoundException {
-
-    }
-
-    /**
-     * 结束任务
-     */
-    default void close() {
-
-    }
+    void execute();
 
     /**
      * 暂停
      */
-    default void pause(){
-
-    }
+    void pause();
 
     /**
      * 断点续传

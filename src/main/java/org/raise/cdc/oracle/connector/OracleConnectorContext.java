@@ -4,10 +4,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.raise.cdc.base.config.BaseContextConfig;
 import org.raise.cdc.base.config.ConnectorContext;
-import org.raise.cdc.oracle.bean.LogFile;
+import org.raise.cdc.oracle.bean.OracleLogFile;
 import org.raise.cdc.oracle.config.OracleConnectorConfig;
 
-import javax.sql.DataSource;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -47,7 +46,7 @@ public class OracleConnectorContext<T extends OracleConnectorConfig> implements 
     /**
      * 当前线程加载到的日志文件
      */
-    private List<LogFile> addedLogFiles = new ArrayList<>();
+    private List<OracleLogFile> addedOracleLogFiles = new ArrayList<>();
 
     /**
      * 任务上下文

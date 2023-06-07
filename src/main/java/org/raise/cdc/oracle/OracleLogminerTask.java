@@ -9,6 +9,7 @@ import org.raise.cdc.base.transaction.TransactionManager;
 import org.raise.cdc.base.util.DataSourceUtil;
 import org.raise.cdc.oracle.config.OracleTaskConfig;
 import org.raise.cdc.oracle.connector.OracleConnector;
+import org.raise.cdc.oracle.task.AbstractOracleTask;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -23,7 +24,7 @@ import static org.raise.cdc.base.util.PropertiesUtil.getPropsStr;
  * @Version: V1.0
  */
 @Slf4j
-public class OracleLogminerTask implements DataTask {
+public class OracleLogminerTask extends AbstractOracleTask {
 
     /**
      * 启动该任务的配置
@@ -109,6 +110,9 @@ public class OracleLogminerTask implements DataTask {
         this.connections.add(this.contextConfig.getDataSource().getConnection());
     }*/
 
+    /**
+     * 快照
+     */
     void snapShot() {
 
     }
@@ -121,20 +125,7 @@ public class OracleLogminerTask implements DataTask {
     }
 
     /**
-     * 对外启动
-     */
-    @Override
-    public void run() {
-        try {
-            init();
-        } catch (Exception e) {
-            log.error("初始化失败" + e.getMessage(), e);
-            return;
-        }
-    }
-
-    /**
-     * 初始化资源
+     * 初始化任务
      */
     @Override
     public void init() throws SQLException, ClassNotFoundException {
@@ -145,10 +136,7 @@ public class OracleLogminerTask implements DataTask {
         this.contextConfig.setDataSource(DataSourceUtil.getDataSource(this.oracleTaskConfig));
         OracleConnector initialConnect = OracleConnector.init(this.contextConfig);
 
-        // 判定当前的模式，先默认全量转增量
-        // 断点续传后面重新考虑实现，比如提供的scn已经失效，那么就还是全量转增量，暂时先实现scn的模式
-        // TODO:这里要转成多线程ComplatebleFuture异步通知模式，自主启动全量转增量
-        this.snapShot();
+
 
 
         // 初始化第一个jdbc连接
@@ -160,5 +148,25 @@ public class OracleLogminerTask implements DataTask {
         // 计算需要的分片
 
         // 进入多线程抽取模式 猛抽~~
+    }
+
+    /**
+     * 启动任务
+     */
+    @Override
+    public void start() {
+
+        // 判定当前的模式，先默认全量转增量
+        // 断点续传后面重新考虑实现，比如提供的scn已经失效，那么就还是全量转增量，暂时先实现scn的模式
+        // TODO:这里要转成多线程ComplatebleFuture异步通知模式，自主启动全量转增量
+        this.snapShot();
+    }
+
+    /**
+     * 结束任务
+     */
+    @Override
+    public void close() {
+
     }
 }
