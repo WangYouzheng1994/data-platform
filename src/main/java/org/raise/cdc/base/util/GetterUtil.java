@@ -1,5 +1,9 @@
 package org.raise.cdc.base.util;
 
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.util.Arrays;
+
 /**
  * @Description:
  * @Author: WangYouzheng
@@ -33,6 +37,20 @@ public class GetterUtil {
             return (Integer) obj;
         }
         return Integer.parseInt(getString(obj));
+    }
+
+    /**
+     * 获取字符串参数列表
+     *
+     * @param params
+     * @return
+     */
+    public static String[] getStrPar(Object... params) {
+        if (ArrayUtils.isNotEmpty(params)) {
+            return Arrays.stream(params).map(GetterUtil::getString).toArray(String[]::new);
+        } else {
+            return new String[]{};
+        }
     }
 
     /**

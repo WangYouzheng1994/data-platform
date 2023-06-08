@@ -1,6 +1,5 @@
 package org.raise.cdc.oracle;
 
-import com.alibaba.druid.pool.DruidDataSource;
 import com.google.common.collect.Lists;
 import lombok.Builder;
 import lombok.Data;
@@ -215,7 +214,7 @@ public class OracleLogminerTask extends AbstractOracleTask {
      */
     @Builder
     @Data
-    private class FlashInitTableHandler implements Supplier {
+    class FlashInitTableHandler implements Supplier {
         /**
          * 要抽取的表
          */

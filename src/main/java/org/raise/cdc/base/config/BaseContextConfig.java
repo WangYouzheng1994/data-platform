@@ -67,13 +67,26 @@ public class BaseContextConfig {
     }
 
     /**
-     * 获取当前任务的抽取最大值，作为下一轮的START
-     *
+     * 获取当前任务的抽取起始，作为下一轮的START
+     * 算法解释： 用当前end，
+     * TODO:如果是redo那么就再+1 考虑要放到各个执行线程去做，因为有的线程可能还在挖掘归档，有的就到redo了
      * curretnSCN + (stepSCN/并发数)
      *
      * @return
      */
     public Long getCurrentStartSCN() {
-        return currentSCN.getAndAdd(stepSCN.get());
+        long nowStart = endSCN.get();
+        startSCN.set(nowStart);
+        return nowStart;
+    }
+
+    /**
+     * 获取当前任务抽取的结束
+     * 用计算后的start + step
+     * @return
+     */
+    public Long getCurrentEndSCN() {
+        endSCN.set(startSCN.addAndGet(stepSCN.get()));
+        return endSCN.get();
     }
 }

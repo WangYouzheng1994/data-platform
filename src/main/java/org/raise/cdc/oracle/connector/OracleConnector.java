@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.raise.cdc.base.config.BaseContextConfig;
 import org.raise.cdc.base.config.DataReadType;
 import org.raise.cdc.base.data.DataProcess;
+import org.raise.cdc.base.util.GetterUtil;
 import org.raise.cdc.base.util.JDBCConnector;
 import org.raise.cdc.oracle.config.OracleConnectorConfig;
 import org.raise.cdc.oracle.constants.LogminerKeyConstants;
@@ -260,5 +261,41 @@ public class OracleConnector extends JDBCConnector {
             }
         }
     }
+
+
+    /**
+     * logminer挖掘日志
+     */
+    public void doStartOrUpdateLogMiner() {
+        addLog();
+    }
+
+    /**
+     * 根据要求查询归档+重做日志后，
+     * 增加日志 add_logfile +
+     * 开启日志挖掘 start_logmnr
+     */
+    private void addLog() {
+        try {
+            prepareCall(SqlUtil.SQL_START_LOGMINER,
+                    GetterUtil.getStrPar(this.getConnContext().getContextConfig().getCurrentStartSCN(),
+                            this.getConnContext().getContextConfig().getCurrentEndSCN())
+                    );
+        } catch (SQLException e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+
+
+
+    /** 重置 启动logminer的statement */
+    public void resetLogminerStmt(String startSql) throws SQLException {
+        // 避免服用，先清空一下
+        closeStmt(this.connContext.getLogMinerStartStmt());
+        connection.prepareCall(startSql);
+        // configStatement(logMinerStartStmt);
+    }
+
 
 }
