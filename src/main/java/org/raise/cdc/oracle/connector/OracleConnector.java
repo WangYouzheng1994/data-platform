@@ -275,6 +275,11 @@ public class OracleConnector extends JDBCConnector {
         // QUERY， 查询logcontents
         queryLogContents();
         // READ
+        // TODO: 这里需要多线程进行介入协调，因为涉及到解析以及TransactionManger緩存問題，以及结果集的输出进队列順序问题了，这里处理完，就结束了。
+        /**
+         * 思路：针对当前的Connector，获取他的start 和 end 进行排序，每次只准有一个线程往队列中赛数据，考虑用信号量进行协调。模型应该是依次唤醒的方式。
+         * 并且还需要一个变量存储的实际的抽取到的scn作为下一轮的start，因为有可能期望抽取的是500 ~ 1000，实际上最大没有到1000，步进的存在导致了这一现象发生。
+          */
 
         // WAIT 等待下一次任务分配
     }
