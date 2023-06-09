@@ -13,3 +13,8 @@ https://www.infoq.cn/article/pGakNSLI9xUfEj9HtOlT
 > 然后当读取到了undo以后，再生成删除的数据，类似于先推送一定会rollback的数据，进行完整的回放~
 https://blog.csdn.net/weixin_34306446/article/details/94175733  
 > https://blog.csdn.net/u011868279/article/details/127133931
+
+4. 深度解析 回滚日志
+http://blog.itpub.net/31454056/viewspace-2214281/
+5. 事务的undo分析
+   https://www.cnblogs.com/KAJIA1/p/12124288.html

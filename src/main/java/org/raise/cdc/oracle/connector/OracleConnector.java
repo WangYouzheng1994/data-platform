@@ -172,6 +172,8 @@ public class OracleConnector extends JDBCConnector {
 
     /**
      * 根据scn，获取指定表的全量闪回数据
+     * SNAPSHOT状态
+     * 快照结束后 WAIT状态
      *  @param currentMaxScn
      * @param tableName
      * @param sinkProcess
@@ -267,7 +269,14 @@ public class OracleConnector extends JDBCConnector {
      * logminer挖掘日志
      */
     public void doStartOrUpdateLogMiner() {
+        // INIT_LOG 加载日志
+        // WA 启动挖掘
         addLog();
+        // QUERY， 查询logcontents
+        queryLogContents();
+        // READ
+
+        // WAIT 等待下一次任务分配
     }
 
     /**
@@ -275,19 +284,33 @@ public class OracleConnector extends JDBCConnector {
      * 增加日志 add_logfile +
      * 开启日志挖掘 start_logmnr
      */
-    private void addLog() {
+    private boolean addLog() {
         try {
             prepareCall(SqlUtil.SQL_START_LOGMINER,
                     GetterUtil.getStrPar(this.getConnContext().getContextConfig().getCurrentStartSCN(),
                             this.getConnContext().getContextConfig().getCurrentEndSCN())
                     );
+            return true;
         } catch (SQLException e) {
             log.error(e.getMessage(), e);
         }
+        return false;
     }
 
-
-
+    /**
+     * 查询当前连接挖掘到的v$log_contents数据，避免数据量问题，只检索需要检索的表还有定向的DML语句数据
+     *
+     * @return
+     */
+    private boolean queryLogContents() {
+        try {
+            prepareStatement(this.connContext.getContextConfig().getSelectLogConttents());
+            return true;
+        } catch (SQLException e) {
+            log.error(e.getMessage(), e);
+        }
+        return false;
+    }
 
     /** 重置 启动logminer的statement */
     public void resetLogminerStmt(String startSql) throws SQLException {
@@ -296,6 +319,4 @@ public class OracleConnector extends JDBCConnector {
         connection.prepareCall(startSql);
         // configStatement(logMinerStartStmt);
     }
-
-
 }

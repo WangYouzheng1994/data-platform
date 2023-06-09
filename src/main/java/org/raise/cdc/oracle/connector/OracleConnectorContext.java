@@ -29,16 +29,19 @@ public class OracleConnectorContext<T extends OracleConnectorConfig> implements 
     /**
      * 使用PLSQL，发起Logminer进行日志添加以及日志挖掘开启动作
      */
+    @Deprecated
     private CallableStatement logMinerStartStmt;
 
     /**
      * 查询$Log_content的数据挖掘结果
      */
+    @Deprecated
     private PreparedStatement logMinerSelectStmt;
 
     /**
      * logcontent结果集
      */
+    @Deprecated
     private ResultSet logMinerData;
 
     T connectorConfig;

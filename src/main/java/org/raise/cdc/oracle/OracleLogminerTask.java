@@ -5,12 +5,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.raise.cdc.base.config.BaseContextConfig;
 import org.raise.cdc.base.data.DataProcessKafka;
 import org.raise.cdc.base.transaction.TransactionManager;
 import org.raise.cdc.base.util.DataSourceUtil;
 import org.raise.cdc.oracle.config.OracleTaskConfig;
 import org.raise.cdc.oracle.connector.OracleConnector;
+import org.raise.cdc.oracle.mapper.SqlUtil;
 import org.raise.cdc.oracle.task.AbstractOracleTask;
 
 import java.math.BigInteger;
@@ -89,9 +91,13 @@ public class OracleLogminerTask extends AbstractOracleTask {
         // 任务配置
         this.oracleTaskConfig = OracleTaskConfig.builder().jdbcUrl(jdbcUrl).tables(sourceTableList).userName(user).password(pwd).build();
         this.contextConfig = new BaseContextConfig();
+        // 任务配置
         this.contextConfig.setTaskConfig(oracleTaskConfig);
-        // 本地LRU缓存
+        // 本地TransactionManager，使用LRU,避免OOM, TODO: 后续需要加锁，支持多线程。
         this.contextConfig.setTransactionManager(new TransactionManager(4000L, 20));
+
+        // 根据tables获取logminer的固定SQL，没必要每次生成，目前不处理CDB，所以直接写死false。
+        this.contextConfig.setSelectLogConttents(SqlUtil.selectLogContents("UPDATE,INSERT,DELETE", StringUtils.join(sourceTableList.toArray()), false));
     }
 
     /**

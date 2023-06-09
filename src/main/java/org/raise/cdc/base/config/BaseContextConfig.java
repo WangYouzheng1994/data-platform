@@ -51,19 +51,41 @@ public class BaseContextConfig {
      */
     private AtomicLong currentPositionSCN;
 
-
     /**
      * 启动任务的参数数据
      */
     private OracleTaskConfig taskConfig;
 
+    /**
+     * 任务状态
+     */
     private TaskStatus taskStatus;
+
+    /**
+     * 查询logcontents
+     */
+    private String selectLogConttents;
 
     /**
      * 任务状态 初始化组件中，快照抽取中（全量），日志抽取中(binlog/archievelog)，实时抽驱中(最新的redo/binlog)
      */
     enum TaskStatus {
-
+        /**
+         * 初始化任务
+         */
+        INITIAL,
+        /**
+         * 快照
+         */
+        SNAPSHOT,
+        /**
+         * 归档抽取
+         */
+        ARCHIVE,
+        /**
+         * 近实时增量抽取
+         */
+        REDO
     }
 
     /**

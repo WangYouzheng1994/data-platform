@@ -1,13 +1,21 @@
 package org.raise.cdc.oracle.mapper;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.raise.cdc.base.constants.ConstantValue;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * @Description:
+ * @Description: OracleCDC Mapper TODO: 转成单例的，为了后续能够直接操纵到Mapper层
  * @Author: WangYouzheng
  * @Date: 2023/5/31 20:30
  * @Version: V1.0
  */
+@Slf4j
 public class SqlUtil {
 
     // 修改当前会话的date日期格式
@@ -69,6 +77,29 @@ public class SqlUtil {
     public static final String SQL_FLASH_TABLE_SCN = "SELECT * FROM %s AS OF SCN %s";
 
     /**
+     * 获取V$LogContents的结果
+     */
+    public static final String SQL_SELECT_LOGCONTENTS =  ""
+            + "SELECT\n"
+            + "    scn,\n"
+            + "    timestamp,\n"
+            + "    operation,\n"
+            + "    operation_code,\n"
+            + "    seg_owner,\n"
+            + "    table_name,\n"
+            + "    sql_redo,\n"
+            + "    sql_undo,\n"
+            + "    xidusn,\n"
+            + "    xidslt,\n"
+            + "    xidsqn,\n"
+            + "    row_id,\n"
+            + "    rollback,\n"
+            + "    csf,\n"
+            +"     rs_id\n"
+            + "FROM\n"
+            + "    v$logmnr_contents\n";
+
+    /**
      * 格式化SQL模板替换
      *
      * @param sqlTemplate
@@ -81,5 +112,132 @@ public class SqlUtil {
             result = String.format(sqlTemplate, params);
         }
         return result;
+    }
+
+    public static List<String> EXCLUDE_SCHEMAS = Collections.singletonList("SYS");
+
+    /**
+     * 构建查询v$logmnr_contents视图SQL
+     *
+     * @param listenerOptions 需要采集DML操作类型字符串 delete,insert,update，减少数据量
+     * @param tableList 需要采集的schema+表名 SCHEMA1.TABLE1,SCHEMA2.TABLE2
+     * @return
+     */
+    public static String selectLogContents(
+            String listenerOptions, String tableList, boolean isCdb) {
+        StringBuilder sqlBuilder = new StringBuilder(SqlUtil.SQL_SELECT_LOGCONTENTS);
+        sqlBuilder.append(" where ");
+        if (StringUtils.isNotEmpty(tableList)) {
+            sqlBuilder.append("  ( ").append(buildSchemaTableFilter(tableList, isCdb));
+        } else {
+            sqlBuilder.append("  ( ").append(buildExcludeSchemaFilter());
+        }
+        //判断异常类型
+        /*if(this.identification==4||this.identification==1){
+            sqlBuilder.append(" and ").append(" rs_id > '"+this.rs_id+"'");
+        }*/
+        if (StringUtils.isNotEmpty(listenerOptions)) {
+            sqlBuilder.append(" and ").append(buildOperationFilter(listenerOptions));
+        }
+
+        // 包含commit
+        sqlBuilder.append(" or OPERATION_CODE = 7 )");
+        String sql = sqlBuilder.toString();
+        log.debug("SelectSql = {}", sql);
+        return sql;
+    }
+
+    /**
+     * 构建需要采集的schema+表名的过滤条件
+     *
+     * @param listenerTables 需要采集的schema+表名 SCHEMA1.TABLE1,SCHEMA2.TABLE2
+     * @return
+     */
+    private static String buildSchemaTableFilter(String listenerTables, boolean isCdb) {
+        List<String> filters = new ArrayList<>();
+
+        String[] tableWithSchemas = listenerTables.split(ConstantValue.COMMA_SYMBOL);
+        for (String tableWithSchema : tableWithSchemas) {
+            List<String> tables = Arrays.asList(tableWithSchema.split("\\."));
+            if (ConstantValue.STAR_SYMBOL.equals(tables.get(0))) {
+                throw new IllegalArgumentException(
+                        "Must specify the schema to be collected:" + tableWithSchema);
+            }
+
+            StringBuilder tableFilterBuilder = new StringBuilder(256);
+            if (isCdb && tables.size() == 3) {
+                tableFilterBuilder.append(String.format("SRC_CON_NAME='%s' and ", tables.get(0)));
+            }
+
+            tableFilterBuilder.append(
+                    String.format(
+                            "SEG_OWNER='%s'",
+                            isCdb && tables.size() == 3 ? tables.get(1) : tables.get(0)));
+
+            if (!ConstantValue.STAR_SYMBOL.equals(
+                    isCdb && tables.size() == 3 ? tables.get(2) : tables.get(1))) {
+                tableFilterBuilder
+                        .append(" and ")
+                        .append(
+                                String.format(
+                                        "TABLE_NAME='%s'",
+                                        isCdb && tables.size() == 3
+                                                ? tables.get(2)
+                                                : tables.get(1)));
+            }
+
+            filters.add(String.format("(%s)", tableFilterBuilder));
+        }
+
+        return String.format("(%s)", StringUtils.join(filters, " or "));
+    }
+
+    /**
+     * 过滤系统表
+     *
+     * @return
+     */
+    private static String buildExcludeSchemaFilter() {
+        List<String> filters = new ArrayList<>();
+        for (String excludeSchema : EXCLUDE_SCHEMAS) {
+            filters.add(String.format("SEG_OWNER != '%s'", excludeSchema));
+        }
+
+        return String.format("(%s)", StringUtils.join(filters, " and "));
+    }
+
+    /**
+     * 构建需要采集操作类型字符串的过滤条件
+     *
+     * @param listenerOptions 需要采集操作类型字符串 delete,insert,update
+     * @return
+     */
+    private static String buildOperationFilter(String listenerOptions) {
+        List<String> standardOperations = new ArrayList<>();
+
+        String[] operations = listenerOptions.split(ConstantValue.COMMA_SYMBOL);
+        for (String operation : operations) {
+
+            int operationCode;
+            switch (operation.toUpperCase()) {
+                case "INSERT":
+                    operationCode = 1;
+                    break;
+                case "DELETE":
+                    operationCode = 2;
+                    break;
+                case "UPDATE":
+                    operationCode = 3;
+                    break;
+                default:
+                    throw new RuntimeException("Unsupported operation type:" + operation);
+            }
+
+            standardOperations.add(String.format("'%s'", operationCode));
+        }
+
+        return String.format(
+                "OPERATION_CODE in (%s) ",
+                StringUtils.join(standardOperations, ConstantValue.COMMA_SYMBOL));
     }
 }

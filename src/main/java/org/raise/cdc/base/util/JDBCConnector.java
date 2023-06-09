@@ -1,7 +1,6 @@
 package org.raise.cdc.base.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.sql.*;
@@ -17,16 +16,20 @@ public class JDBCConnector {
     protected Connection connection;
     protected CallableStatement callableStatement;
     protected PreparedStatement preparedStatement;
+    protected ResultSet preparedResultSet;
 
     /**
      * 发送jdbc请求，自带重试
+     *
      * @param sql
      */
     public void sendJdbc(String sql) {
 
     }
 
-    /** 关闭数据库连接资源 */
+    /**
+     * 关闭数据库连接资源
+     */
     protected void closeResources(ResultSet rs, Statement stmt, Connection conn) {
         if (null != rs) {
             try {
@@ -49,13 +52,25 @@ public class JDBCConnector {
     }
 
     /**
-     * 发送prepareStatement
+     * 发送prepareStatement，设置游标只能往下走，避免数据太多导致oom
      *
      * @param sql
      * @throws SQLException
      */
-    protected void prepareStatement(String sql) throws SQLException {
-        connection.prepareStatement(sql);
+    protected boolean prepareStatement(String sql) throws SQLException {
+        try {
+            preparedStatement = connection.prepareStatement(sql,
+                    ResultSet.TYPE_FORWARD_ONLY,
+                    ResultSet.CONCUR_READ_ONLY);
+            preparedStatement.setFetchSize(10000);
+            //增加超时时间
+            preparedStatement.setQueryTimeout(600);
+            preparedResultSet = preparedStatement.executeQuery();
+            return true;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        return false;
     }
 
     /**
@@ -65,7 +80,7 @@ public class JDBCConnector {
      * @throws SQLException
      */
     protected void prepareCall(String sql, String... params) throws SQLException {
-        connection.prepareCall(sql);
+        callableStatement = connection.prepareCall(sql);
 
         if (ArrayUtils.isNotEmpty(params)) {
             for (int i = 1; i <= params.length; i++) {
@@ -87,10 +102,12 @@ public class JDBCConnector {
         boolean rst = false;
         do {
             prepareCall(sql);
-        } while(!rst);
+        } while (!rst);
     }
 
-    /** 关闭Statement */
+    /**
+     * 关闭Statement
+     */
     protected void closeStmt(Statement statement) {
         try {
             if (statement != null && !statement.isClosed()) {
