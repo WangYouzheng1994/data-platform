@@ -13,7 +13,7 @@ import java.util.List;
  * @Date: 2022/8/3 13:19
  * @Version: V1.0
  */
-@Data
+// @Data
 @Builder
 public class OracleTaskConfig extends BaseStartConfig {
     /**
@@ -129,7 +129,7 @@ public class OracleTaskConfig extends BaseStartConfig {
      * jdbc配置
      */
     @Data
-    private class JdbcConfig {
+    public static class JdbcConfig {
         /**
          * source jdbc 驱动连接
          */
@@ -149,5 +149,101 @@ public class OracleTaskConfig extends BaseStartConfig {
          * source jdbc 驱动类class
          */
         private String driverClass;
+    }
+
+    public String getTaskName() {
+        return taskName;
+    }
+
+    public void setTaskName(String taskName) {
+        this.taskName = taskName;
+    }
+
+    public DataReadType getReadPosition() {
+        return readPosition;
+    }
+
+    public void setReadPosition(DataReadType readPosition) {
+        this.readPosition = readPosition;
+    }
+
+    public Long getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(Long startTime) {
+        this.startTime = startTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+
+    public String getStartSCN() {
+        return startSCN;
+    }
+
+    public void setStartSCN(String startSCN) {
+        this.startSCN = startSCN;
+    }
+
+    public String getEndSCN() {
+        return endSCN;
+    }
+
+    public void setEndSCN(String endSCN) {
+        this.endSCN = endSCN;
+    }
+
+    public int getFetchSize() {
+        return fetchSize;
+    }
+
+    public void setFetchSize(int fetchSize) {
+        this.fetchSize = fetchSize;
+    }
+
+    public List<String> getTables() {
+        return tables;
+    }
+
+    public void setTables(List<String> tables) {
+        this.tables = tables;
+    }
+
+    public int getIdentification() {
+        return identification;
+    }
+
+    public void setIdentification(int identification) {
+        this.identification = identification;
+    }
+
+    public String getRs_id() {
+        return rs_id;
+    }
+
+    public void setRs_id(String rs_id) {
+        this.rs_id = rs_id;
+    }
+
+    public JdbcConfig getJdbcConfig() {
+        return jdbcConfig;
+    }
+
+    public void setJdbcConfig(JdbcConfig jdbcConfig) {
+        this.jdbcConfig = jdbcConfig;
+    }
+
+    public Short getSnapShotParallelism() {
+        return snapShotParallelism;
+    }
+
+    public void setSnapShotParallelism(Short snapShotParallelism) {
+        this.snapShotParallelism = snapShotParallelism;
     }
 }

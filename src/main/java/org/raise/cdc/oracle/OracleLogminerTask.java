@@ -1,13 +1,10 @@
 package org.raise.cdc.oracle;
 
 import com.google.common.collect.Lists;
-import lombok.Builder;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.raise.cdc.base.config.BaseContextConfig;
-import org.raise.cdc.base.data.DataProcessKafka;
 import org.raise.cdc.base.transaction.TransactionManager;
 import org.raise.cdc.base.util.DataSourceUtil;
 import org.raise.cdc.oracle.config.OracleTaskConfig;
@@ -19,7 +16,6 @@ import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.function.Supplier;
 
 import static org.raise.cdc.base.util.PropertiesUtil.getPropsStr;
 
@@ -129,7 +125,8 @@ public class OracleLogminerTask extends AbstractOracleTask {
                 return CompletableFuture.supplyAsync(FlashInitTableHandler.builder().currentMaxScn(currentScn).connector(split).tables(tables).build(), executorService);
             }).toArray(CompletableFuture[]::new);
 
-            CompletableFuture.allOf(snapShotResult).join();
+            // TODO: https://blog.csdn.net/lhc66666/article/details/129276853
+            // CompletableFuture.allOf(snapShotResult).join();
             // close连接。
             log.info("snapshot 结束了哈~");
             return true;
@@ -215,39 +212,5 @@ public class OracleLogminerTask extends AbstractOracleTask {
         return null;
     }*/
 
-    /**
-     * 闪回执行线程
-     */
-    @Builder
-    @Data
-    class FlashInitTableHandler implements Supplier {
-        /**
-         * 要抽取的表
-         */
-        private List<String> tables;
-        /**
-         * 连接任务
-         */
-        private OracleConnector connector;
-        /**
-         * 最大的scn水位线
-         */
-        private BigInteger currentMaxScn;
 
-        /**
-         * Gets a result.
-         *
-         * @return a result
-         */
-        @Override
-        public Object get() {
-            if (CollectionUtils.isNotEmpty(tables) && connector != null) {
-                tables.stream().forEach(tableName -> {
-                    connector.doInitOracleAllData(currentMaxScn, tableName, new DataProcessKafka());
-                });
-                return true;
-            }
-            return false;
-        }
-    }
 }
